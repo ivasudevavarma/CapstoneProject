@@ -6,6 +6,8 @@ from flask import abort
 import mysql.connector
 import datetime
 import time
+from kafka import KafkaProducer
+import json
 
 class FeedbackHandler:
     def __init__(self,database_host,Kafka_topic,database_username,database_password,database_name):
@@ -66,19 +68,19 @@ class FeedbackHandler:
         self.finaldict["click"] = self.requestData["click"]
         self.finaldict["view"] = self.requestData["view"]
         self.finaldict["acquisition"] = self.requestData["acquisition"]
-        self.finaldict["auction_cpm"] = self.servedDetails[0][3]
-        self.finaldict["auction_cpc"] = self.servedDetails[0][4]
-        self.finaldict["auction_cpa"] = self.servedDetails[0][5]
+        self.finaldict["auction_cpm"] = float(self.servedDetails[0][3])
+        self.finaldict["auction_cpc"] = float(self.servedDetails[0][4])
+        self.finaldict["auction_cpa"] = float(self.servedDetails[0][5])
         self.finaldict["target_age_range"] = self.servedDetails[0][6]
-        self.finaldict["target_Location"] = self.servedDetails[0][7]
+        self.finaldict["target_Location"] = (self.servedDetails[0][7]).replace(",",";").replace("and",";").replace(" ","")
         self.finaldict["target_gender"] = self.servedDetails[0][8]
         self.finaldict["target_income_bucket"] = self.servedDetails[0][9]
         self.finaldict["target_device_type"] = self.servedDetails[0][10]
-        self.finaldict["campaign_start_time"] = self.servedDetails[0][11]
-        self.finaldict["campaign_end_time"] = self.servedDetails[0][12]
+        self.finaldict["campaign_start_time"] = str(self.servedDetails[0][11])
+        self.finaldict["campaign_end_time"] = str(self.servedDetails[0][12])
         self.finaldict["user_action"] = (self.userAction())[0]
         self.finaldict["expenditure"] = (self.userAction())[1]
-        self.finaldict["timestamp"] = self.servedDetails[0][13]
+        self.finaldict["timestamp"] = str(self.servedDetails[0][13])
         print(self.finaldict)
 
     def updateExpenseInDB(self):
@@ -120,14 +122,22 @@ class FeedbackHandler:
                 # terminating DB connection
                 self.closeDBConnection()
 
-
+    def SendDatatoKafkaProducer(self):
+        bootstrap_servers = ['localhost:9092']
+        topicName = self.Kafka_topic
+        producer = KafkaProducer(bootstrap_servers = bootstrap_servers)
+        jsonData = json.dumps(self.finaldict)
+        ack = producer.send(topicName, jsonData.encode('utf-8'))
+        metadata = ack.get()
+        print(metadata.topic)
+        print(metadata.partition)
 
 
     def handlerProcess(self):
         if self.fetchServerAdDetails():
             self.finalKafkaData()
             self.updateExpenseInDB()
-        #self.SendDatatoKafkaProducer()
+            self.SendDatatoKafkaProducer()
 
 
 if __name__ == "__main__":
