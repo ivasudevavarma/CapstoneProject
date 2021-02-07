@@ -1,11 +1,11 @@
-#convert character set to UTF-8
+/* #convert character set to UTF-8 */
 ALTER TABLE table_name CONVERT TO CHARACTER SET utf8;
 
-# Ads  Storage Table
+/* #Ads  Storage Table */
 create table ads (
     text varchar(300) not null,
-    category varchar(100) not null,	
-    keywords varchar(100) not null,	
+    category varchar(200) not null,	
+    keywords varchar(200) not null,	
     campaignID varchar(50) primary key,
     status varchar(10) not null,
     targetGender varchar(3) not null,
@@ -27,8 +27,7 @@ create table ads (
     timeRangeEnd time not null
 );
 
-# Ads serve Table
-
+/* # Ads serve Table */
 create table served_ads(
     requestID varchar(50) primary key,
     campaignID varchar(50) not null,
@@ -46,16 +45,15 @@ create table served_ads(
     userFeedbackTimeStamp TIMESTAMP not null
 );
 
-# User table
-
-create table user(
-    userID varchar(50) primary key,
+/* # User table */
+create table users(
+    id varchar(50) primary key,
     age TINYINT not null,
     gender varchar(1) not null,
     internetUsage varchar(50),
     incomeBucket varchar(3),
     userAgentString varchar(300),
-    deviceType varchar(50),
+    device_type varchar(50),
     Websites varchar(300),
     Movies varchar(300),
     Music varchar(300),
@@ -65,9 +63,9 @@ create table user(
     Positives varchar(300),
 );
 
-# loading data into User Table
+/* # loading data into users Table */
 load data local infile 'users_500k.csv'
- into table user
+ into table users
  fields terminated by '|'
  lines terminated by '\n'
  IGNORE 1 LINES;

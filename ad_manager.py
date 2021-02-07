@@ -170,7 +170,7 @@ if __name__ == "__main__":
     
     # Validate Command line arguments
     if len(sys.argv) != 7:
-        print("Usage: kafka_mysql.py <kafka_bootstrap_server> <kafka_topic> "
+        print("Usage: ad_manager.py <kafka_bootstrap_server> <kafka_topic> "
         "<database_host> <database_username> <database_password> <database_name>")
         exit(-1)
         
