@@ -9,7 +9,7 @@ from datetime import datetime as dt
 
 class SlotBudgetManager:
     def __init__(self,database_host,database_username, database_password,database_name):
-        print('Initialize MySQL database connection')
+        #'Initialize MySQL database connection'
         self.db = mysql.connector.connect(
             host=database_host,user=database_username,password=database_password,database=database_name
             )
@@ -23,7 +23,6 @@ class SlotBudgetManager:
         sql = "select * from ads where status = 'active'"
         db_cursor.execute(sql)
         self.activeAdsList = db_cursor.fetchall()
-        print('FetchAllActiveAdCampaign : Length of ActiveAdsList : ',len(self.activeAdsList))
 
     # Re-Calculation slot budget based on available slots from current date to end range of the specific campign
     def Slot_Budget_Calculation(self):
@@ -85,7 +84,7 @@ if __name__ == "__main__":
     database_password = sys.argv[3]
     database_name = sys.argv[4]
 
-    print('Current Start Time:',datetime.datetime.now())
+    print(datetime.datetime.now())
 
     try:
         slot_budget = SlotBudgetManager(database_host,database_username,database_password,database_name)

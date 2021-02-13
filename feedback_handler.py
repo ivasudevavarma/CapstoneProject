@@ -1,15 +1,20 @@
+# Author : Vasudeva Varma Indukuri
+# @Email : ivasudevavarma@gmail.com
+
 # importing System dependencies and required flask modules
 import sys
 import flask
-from flask import request, jsonify
-from flask import abort
 import mysql.connector
 import datetime
 import time
-from kafka import KafkaProducer
 import json
+from flask import request, jsonify
+from flask import abort
+from kafka import KafkaProducer
 
+# FeedbackHandler Class with all neccessary action to be performed within
 class FeedbackHandler:
+    # Init Method to assign values to the class accessible variables
     def __init__(self,database_host,Kafka_topic,database_username,database_password,database_name):
         # Initializing DB connection variable and kafka topic.
         self.database_host = database_host
@@ -18,15 +23,16 @@ class FeedbackHandler:
         self.database_password = database_password
         self.database_name = database_name
 
+    # Initialize MySQL database connection methods
     def InitializeDBConnection(self):
-        # Initialize MySQL database connection
         self.db = mysql.connector.connect(
             host=self.database_host,user=self.database_username,password=self.database_password,database=self.database_name
             )
-
+    # Closing MySQL database connection methods
     def closeDBConnection(self):
         self.db.close()
 
+    # Method fetchServerAdDetails from served_ads table for further processing
     def fetchServerAdDetails(self):
 
         # Sql fetch served ads details based on Request ID
@@ -52,6 +58,7 @@ class FeedbackHandler:
 
         return False
 
+    # Method to calculate the dervied data "user_action" and "expenditure"
     def userAction(self):
         if int(self.requestData["acquisition"]) == 1:
             return ["acquisition",float(self.servedDetails[0][5])]
@@ -59,7 +66,8 @@ class FeedbackHandler:
             return ["click",float(self.servedDetails[0][4])]
         else:
             return ["view",0]
-
+    
+    # Method to create a dictionary based on all the data retrived from served_ads and response from user_simulator
     def finalKafkaData(self): 
         self.finaldict = {}
         self.finaldict["request_id"] = self.servedDetails[0][0]
@@ -81,12 +89,12 @@ class FeedbackHandler:
         self.finaldict["user_action"] = (self.userAction())[0]
         self.finaldict["expenditure"] = (self.userAction())[1]
         self.finaldict["timestamp"] = str(self.servedDetails[0][13])
-        print(self.finaldict)
 
+    # Method is to Calculate left over budget and current_slot_budget if expense > 0 update the ads table. 
     def updateExpenseInDB(self):
         if self.finaldict["expenditure"] > 0:
             sql = "select budget,currentSlotBudget from ads where campaignID = '"+self.finaldict["campaign_id"]+"';"
-            print(sql)
+
             # Initialize DB cursor
             db_cursor = self.db.cursor()
 
@@ -111,7 +119,6 @@ class FeedbackHandler:
                     update_sql += ", status ='INACTIVE'"
 
                 update_sql += " where campaignID = '"+self.finaldict["campaign_id"]+"';"
-                print(update_sql)
 
                 # Executing the sql statement
                 db_cursor.execute(update_sql)
@@ -122,17 +129,15 @@ class FeedbackHandler:
                 # terminating DB connection
                 self.closeDBConnection()
 
+    # Method is used to send the data to the kafka server.
     def SendDatatoKafkaProducer(self):
         bootstrap_servers = ['localhost:9092']
         topicName = self.Kafka_topic
         producer = KafkaProducer(bootstrap_servers = bootstrap_servers)
         jsonData = json.dumps(self.finaldict)
-        ack = producer.send(topicName, jsonData.encode('utf-8'))
-        metadata = ack.get()
-        print(metadata.topic)
-        print(metadata.partition)
+        producer.send(topicName, jsonData.encode('utf-8'))
 
-
+    # Methods to call all the neccessary function is complete the operation
     def handlerProcess(self):
         if self.fetchServerAdDetails():
             self.finalKafkaData()
@@ -168,6 +173,7 @@ if __name__ == "__main__":
 
             # Ad server process initiation
             feedback_handler.ad_request_id = ad_request_id
+            print(feedback_handler.ad_request_id)
             feedback_handler.requestData = request.json
             feedback_handler.handlerProcess()
 
@@ -183,4 +189,4 @@ if __name__ == "__main__":
         print("press control-c again to quit")
 
     finally:
-        print("Finally Completed")
+        print("Completed")
